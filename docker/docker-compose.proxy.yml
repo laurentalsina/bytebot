@@ -64,6 +64,10 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/fra-ai-testing-noprod-3b9aacb75836.json
+      - GOOGLE_CLOUD_LOCATION=europe-west1
+      - GOOGLE_CLOUD_PROJECT=fra-ai-testing-noprod
+      - GOOGLE_GENAI_USE_VERTEXAI=true
     networks:
       - bytebot-network
 
