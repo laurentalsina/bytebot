@@ -286,11 +286,11 @@ async function traceMouse(input: {
 
 async function clickMouse(input: {
   coordinates?: Coordinates;
-  button: Button;
+  button?: Button;
   holdKeys?: string[];
-  clickCount: number;
+  clickCount?: number;
 }): Promise<void> {
-  const { coordinates, button, holdKeys, clickCount } = input;
+  const { coordinates, button = 'left', holdKeys, clickCount = 1 } = input;
   console.log(
     `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
