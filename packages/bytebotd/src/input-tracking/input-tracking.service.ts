@@ -114,11 +114,12 @@ export class InputTrackingService implements OnModuleDestroy {
     });
 
     uIOhook.on('click', (e: UiohookMouseEvent) => {
+      const clickCount = e.clicks && e.clicks > 0 ? e.clicks : 1;
       const action: ClickMouseAction = {
         action: 'click_mouse',
         button: this.mapButton(e.button),
         coordinates: { x: e.x, y: e.y },
-        clickCount: e.clicks,
+        clickCount: clickCount,
         holdKeys: [
           e.altKey ? 'alt' : undefined,
           e.ctrlKey ? 'ctrl' : undefined,
@@ -132,12 +133,9 @@ export class InputTrackingService implements OnModuleDestroy {
       }
 
       this.clickMouseActionTimeout = setTimeout(async () => {
-        // pick the event with the largest clickCount in the burst
-        const final = this.clickMouseActionBuffer.reduce((a, b) =>
-          b.clickCount > a.clickCount ? b : a,
-        );
-        await this.logAction(final); // emit exactly once
-
+        for (const action of this.clickMouseActionBuffer) {
+          await this.logAction(action);
+        }
         this.clickMouseActionTimeout = null;
         this.clickMouseActionBuffer = [];
       }, this.CLICK_DEBOUNCE_MS);
