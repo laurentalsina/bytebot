@@ -123,7 +123,6 @@ export class NutService {
 
   constructor() {
     // Initialize nut-js settings
-    mouse.config.autoDelayMs = 100;
     keyboard.config.autoDelayMs = 100;
 
     // Create screenshot directory if it doesn't exist
@@ -378,6 +377,7 @@ export class NutService {
       }
       return { success: true };
     } catch (error) {
+      this.logger.error(`Failed to click mouse button: ${error.message}`);
       throw new Error(`Failed to click mouse button: ${error.message}`);
     }
   }
