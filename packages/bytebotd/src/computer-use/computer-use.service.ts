@@ -153,6 +153,7 @@ export class ComputerUseService {
     } else {
       // Perform a single click
       await this.nutService.mouseClickEvent(button);
+      await this.delay(100);
     }
 
     // Release hold keys
