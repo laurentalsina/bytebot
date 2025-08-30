@@ -258,7 +258,7 @@ export const _waitTool = {
     properties: {
       duration: {
         type: 'integer' as const,
-        enum: ['500'],
+        enum: ['200'],
         description: 'The duration to wait in milliseconds',
       },
     },
