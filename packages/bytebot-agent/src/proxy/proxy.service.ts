@@ -117,152 +117,131 @@ export class ProxyService implements BytebotAgentService {
   ): ChatCompletionMessageParam[] {
     const chatMessages: ChatCompletionMessageParam[] = [];
 
-    // Add system message
     chatMessages.push({
       role: 'system',
       content: systemPrompt,
     });
 
-    // Process each message
     for (const message of messages) {
       const messageContentBlocks = message.content as MessageContentBlock[];
 
-      // Handle user actions specially
-      if (
-        messageContentBlocks.every((block) => isUserActionContentBlock(block))
-      ) {
-        const userActionBlocks = messageContentBlocks.flatMap(
-          (block) => block.content,
-        );
-
-        for (const block of userActionBlocks) {
-          if (isComputerToolUseContentBlock(block)) {
-            chatMessages.push({
-              role: 'user',
-              content: `User performed action: ${block.name}\n${JSON.stringify(
-                block.input,
-                null,
-                2,
-              )}`,
+      // Group blocks by role and message
+      if (message.role === Role.USER) {
+        const contentParts: ChatCompletionContentPart[] = [];
+        for (const block of messageContentBlocks) {
+          if (block.type === MessageContentType.Text) {
+            contentParts.push({ type: 'text', text: block.text });
+          } else if (block.type === MessageContentType.Image) {
+            const imageBlock = block as ImageContentBlock;
+            contentParts.push({
+              type: 'image_url',
+              image_url: {
+                url: `data:${imageBlock.source.media_type};base64,${imageBlock.source.data}`,
+                detail: 'high',
+              },
             });
-          } else if (isImageContentBlock(block)) {
-            chatMessages.push({
-              role: 'user',
-              content: [
-                {
+          } else if (isUserActionContentBlock(block)) {
+            const userActionBlocks = block.content;
+            for (const actionBlock of userActionBlocks) {
+              if (isComputerToolUseContentBlock(actionBlock)) {
+                contentParts.push({
+                  type: 'text',
+                  text: `User performed action: ${actionBlock.name}\n${JSON.stringify(actionBlock.input, null, 2)}`,
+                });
+              } else if (isImageContentBlock(actionBlock)) {
+                contentParts.push({
                   type: 'image_url',
                   image_url: {
-                    url: `data:${block.source.media_type};base64,${block.source.data}`,
+                    url: `data:${actionBlock.source.media_type};base64,${actionBlock.source.data}`,
                     detail: 'high',
                   },
-                },
-              ],
+                });
+              }
+            }
+          }
+        }
+        if (contentParts.length > 0) {
+          chatMessages.push({ role: 'user', content: contentParts });
+        }
+      } else if (message.role === Role.ASSISTANT) {
+        const textParts: string[] = [];
+        const toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
+
+        for (const block of messageContentBlocks) {
+          if (block.type === MessageContentType.Text) {
+            textParts.push(block.text);
+          } else if (block.type === MessageContentType.Thinking) {
+            textParts.unshift(`Thinking: ${block.thinking}`);
+          } else if (block.type === MessageContentType.ToolUse) {
+            const toolBlock = block as ToolUseContentBlock;
+            toolCalls.push({
+              id: toolBlock.id,
+              type: 'function',
+              function: {
+                name: toolBlock.name,
+                arguments: JSON.stringify(toolBlock.input),
+              },
             });
           }
         }
-      } else {
-        for (const block of messageContentBlocks) {
-          switch (block.type) {
-            case MessageContentType.Text: {
-              chatMessages.push({
-                role: message.role === Role.USER ? 'user' : 'assistant',
-                content: block.text,
-              });
-              break;
-            }
-            case MessageContentType.Image: {
-              const imageBlock = block as ImageContentBlock;
-              chatMessages.push({
-                role: 'user',
-                content: [
-                  {
+
+        const assistantMessage: OpenAI.Chat.ChatCompletionAssistantMessageParam =
+          {
+            role: 'assistant',
+            content: textParts.length > 0 ? textParts.join('\n') : null,
+          };
+
+        if (toolCalls.length > 0) {
+          assistantMessage.tool_calls = toolCalls;
+        }
+
+        if (assistantMessage.content || (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0)) {
+          chatMessages.push(assistantMessage);
+        }
+      }
+
+      // Tool results are always in their own message, but they are associated with a message.
+      // The current structure seems to have them inside other messages, which is weird.
+      // Let's process them separately after processing the main message blocks.
+      for (const block of messageContentBlocks) {
+        if (block.type === MessageContentType.ToolResult) {
+          const toolResultBlock = block as ToolResultContentBlock;
+          const textParts = toolResultBlock.content
+            .filter((c) => c.type === MessageContentType.Text)
+            .map((c: TextContentBlock) => c.text);
+
+          const images = toolResultBlock.content.filter(
+            (c) => c.type === MessageContentType.Image,
+          ) as ImageContentBlock[];
+
+          // Create the tool message with only text content
+          chatMessages.push({
+            role: 'tool',
+            tool_call_id: toolResultBlock.tool_use_id,
+            content: textParts.join('\n') || 'Tool executed successfully.',
+          });
+
+          // If there are images, create a new user message for them
+          if (images.length > 0) {
+            const contentParts: ChatCompletionContentPart[] = [];
+            contentParts.push({type: 'text', text: 'The tool returned the following screenshot(s):'});
+            images.forEach(image => {
+                contentParts.push({
                     type: 'image_url',
                     image_url: {
-                      url: `data:${imageBlock.source.media_type};base64,${imageBlock.source.data}`,
-                      detail: 'high',
-                    },
-                  },
-                ],
-              });
-              break;
-            }
-            case MessageContentType.ToolUse: {
-              const toolBlock = block as ToolUseContentBlock;
-              chatMessages.push({
-                role: 'assistant',
-                tool_calls: [
-                  {
-                    id: toolBlock.id,
-                    type: 'function',
-                    function: {
-                      name: toolBlock.name,
-                      arguments: JSON.stringify(toolBlock.input),
-                    },
-                  },
-                ],
-              });
-              break;
-            }
-            case MessageContentType.Thinking: {
-              const thinkingBlock = block as ThinkingContentBlock;
-              const message: ChatCompletionMessageParam = {
-                role: 'assistant',
-                content: null,
-              };
-              message['reasoning_content'] = thinkingBlock.thinking;
-              chatMessages.push(message);
-              break;
-            }
-            case MessageContentType.ToolResult: {
-              const toolResultBlock = block as ToolResultContentBlock;
-
-              if (
-                toolResultBlock.content.every(
-                  (content) => content.type === MessageContentType.Image,
-                )
-              ) {
-                chatMessages.push({
-                  role: 'tool',
-                  tool_call_id: toolResultBlock.tool_use_id,
-                  content: 'screenshot',
+                        url: `data:${image.source.media_type};base64,${image.source.data}`,
+                        detail: 'high',
+                    }
                 });
-              }
-
-              toolResultBlock.content.forEach((content) => {
-                if (content.type === MessageContentType.Text) {
-                  chatMessages.push({
-                    role: 'tool',
-                    tool_call_id: toolResultBlock.tool_use_id,
-                    content: content.text,
-                  });
-                }
-
-                if (content.type === MessageContentType.Image) {
-                  chatMessages.push({
-                    role: 'user',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Screenshot',
-                      },
-                      {
-                        type: 'image_url',
-                        image_url: {
-                          url: `data:${content.source.media_type};base64,${content.source.data}`,
-                          detail: 'high',
-                        },
-                      },
-                    ],
-                  });
-                }
-              });
-              break;
-            }
+            });
+            chatMessages.push({
+                role: 'user',
+                content: contentParts
+            });
           }
         }
       }
     }
-
     return chatMessages;
   }
 
