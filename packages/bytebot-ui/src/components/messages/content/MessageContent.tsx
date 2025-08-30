@@ -5,11 +5,13 @@ import {
   isImageContentBlock,
   isComputerToolUseContentBlock,
   isToolResultContentBlock,
+  isThinkingContentBlock,
 } from "@bytebot/shared";
 import { TextContent } from "./TextContent";
 import { ImageContent } from "./ImageContent";
 import { ComputerToolContent } from "./ComputerToolContent";
 import { ErrorContent } from "./ErrorContent";
+import { ThinkingContent } from "./ThinkingContent";
 
 interface MessageContentProps {
   content: MessageContentBlock[];
@@ -50,6 +52,8 @@ export function MessageContent({
       {visibleBlocks.map((block, index) => (
         <div key={index}>
           {isTextContentBlock(block) && <TextContent block={block} />}
+
+          {isThinkingContentBlock(block) && <ThinkingContent block={block} />}
 
           {isToolResultContentBlock(block) &&
             !block.is_error &&
