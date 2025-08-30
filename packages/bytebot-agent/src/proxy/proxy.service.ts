@@ -216,22 +216,45 @@ export class ProxyService implements BytebotAgentService {
             case MessageContentType.ToolResult: {
               const toolResultBlock = block as ToolResultContentBlock;
 
-              const textParts = toolResultBlock.content
-                .filter((c) => c.type === MessageContentType.Text)
-                .map((c: TextContentBlock) => c.text);
-
-              const hasImage = toolResultBlock.content.some(
-                (c) => c.type === MessageContentType.Image,
-              );
-
-              if (hasImage) {
-                textParts.push('A screenshot was also taken.');
+              if (
+                toolResultBlock.content.every(
+                  (content) => content.type === MessageContentType.Image,
+                )
+              ) {
+                chatMessages.push({
+                  role: 'tool',
+                  tool_call_id: toolResultBlock.tool_use_id,
+                  content: 'screenshot',
+                });
               }
 
-              chatMessages.push({
-                role: 'tool',
-                tool_call_id: toolResultBlock.tool_use_id,
-                content: textParts.join('\n') || 'Tool executed.',
+              toolResultBlock.content.forEach((content) => {
+                if (content.type === MessageContentType.Text) {
+                  chatMessages.push({
+                    role: 'tool',
+                    tool_call_id: toolResultBlock.tool_use_id,
+                    content: content.text,
+                  });
+                }
+
+                if (content.type === MessageContentType.Image) {
+                  chatMessages.push({
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'text',
+                        text: 'Screenshot',
+                      },
+                      {
+                        type: 'image_url',
+                        image_url: {
+                          url: `data:${content.source.media_type};base64,${content.source.data}`,
+                          detail: 'high',
+                        },
+                      },
+                    ],
+                  });
+                }
               });
               break;
             }
