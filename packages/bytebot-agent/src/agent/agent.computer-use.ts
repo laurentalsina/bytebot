@@ -290,7 +290,16 @@ async function clickMouse(input: {
   holdKeys?: string[];
   clickCount?: number;
 }): Promise<void> {
-  const { coordinates, button = 'left', holdKeys, clickCount = 1 } = input;
+  let { coordinates, button, holdKeys, clickCount } = input;
+
+  if (typeof button !== 'string' || !['left', 'right', 'middle'].includes(button)) {
+    button = 'left';
+  }
+
+  if (typeof clickCount !== 'number' || !Number.isFinite(clickCount)) {
+    clickCount = 1;
+  }
+
   console.log(
     `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
