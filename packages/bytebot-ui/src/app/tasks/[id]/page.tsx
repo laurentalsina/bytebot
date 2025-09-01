@@ -88,13 +88,14 @@ export default function TaskPage() {
     scrollContainerRef: chatContainerRef,
   });
 
+  const isTaskInactiveState = isTaskInactive();
   // For inactive tasks, auto-load all messages for proper screenshot navigation
   useEffect(() => {
-    if (isTaskInactive() && hasMoreMessages && !isLoadingMoreMessages) {
+    if (isTaskInactiveState && hasMoreMessages && !isLoadingMoreMessages) {
       loadMoreMessages();
     }
   }, [
-    isTaskInactive(),
+    isTaskInactiveState,
     hasMoreMessages,
     isLoadingMoreMessages,
     loadMoreMessages,
@@ -117,10 +118,10 @@ export default function TaskPage() {
   }, [currentTaskId, taskId, router]);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-auto">
       <Header />
 
-      <main className="m-2 flex-1 overflow-hidden px-2 py-4">
+      <main className="m-2 flex-1 overflow-auto px-2 py-4">
         <div className="grid h-full grid-cols-7 gap-4">
           {/* Main container */}
           <div className="col-span-4">

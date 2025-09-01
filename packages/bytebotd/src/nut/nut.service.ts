@@ -353,7 +353,10 @@ export class NutService {
   async mouseMoveEvent({ x, y }: { x: number; y: number }): Promise<any> {
     this.logger.log(`Moving mouse to coordinates: (${x}, ${y})`);
     try {
-      const point = new Point(x, y);
+      // HACK: Add a vertical offset to the y-coordinate to fix the issue of the agent clicking too high.
+      const yOffset = 30;
+      const point = new Point(x, y + yOffset);
+      this.logger.log(`Moving mouse to coordinates with offset: (${x}, ${y + yOffset})`);
       await mouse.setPosition(point);
       return { success: true };
     } catch (error) {

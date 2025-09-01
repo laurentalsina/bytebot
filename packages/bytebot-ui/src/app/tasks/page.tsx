@@ -112,7 +112,7 @@ function TasksPageContent() {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-auto">
       <Header />
 
       <main className="flex-1 overflow-scroll px-6 pt-6 pb-10">

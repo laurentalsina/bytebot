@@ -23,7 +23,7 @@ export class AgentAnalyticsService {
   }
 
   @OnEvent('task.cancel')
-  @OnEvent('task.failed')
+  @OnEvent('task.needs_help')
   @OnEvent('task.completed')
   async handleTaskEvent(payload: { taskId: string }) {
     if (!this.endpoint) return;

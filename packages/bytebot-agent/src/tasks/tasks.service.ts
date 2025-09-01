@@ -234,8 +234,6 @@ export class TasksService {
       this.eventEmitter.emit('task.completed', { taskId: id });
     } else if (updateTaskDto.status === TaskStatus.NEEDS_HELP) {
       updatedTask = await this.takeOver(id);
-    } else if (updateTaskDto.status === TaskStatus.FAILED) {
-      this.eventEmitter.emit('task.failed', { taskId: id });
     }
 
     this.logger.log(`Successfully updated task ID: ${id}`);

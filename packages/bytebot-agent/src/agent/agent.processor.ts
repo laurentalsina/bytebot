@@ -36,6 +36,7 @@ import {
   AGENT_SYSTEM_PROMPT,
   SUMMARIZATION_SYSTEM_PROMPT,
 } from './agent.constants';
+import { PromptsService } from '../prompts/prompts.service';
 import { SummariesService } from '../summaries/summaries.service';
 import { handleComputerToolUse } from './agent.computer-use';
 import { ProxyService } from '../proxy/proxy.service';
@@ -56,6 +57,7 @@ export class AgentProcessor {
     private readonly openaiService: OpenAIService,
     private readonly googleService: GoogleService,
     private readonly proxyService: ProxyService,
+    private readonly promptsService: PromptsService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
     this.services = {
@@ -192,7 +194,18 @@ export class AgentProcessor {
           `No service found for model provider: ${model.provider}`,
         );
         await this.tasksService.update(taskId, {
-          status: TaskStatus.FAILED,
+          status: TaskStatus.NEEDS_HELP,
+        });
+        this.isProcessing = false;
+        this.currentTaskId = null;
+        return;
+      }
+
+      const agentSystemPrompt = await this.promptsService.getActivePrompt('AGENT_SYSTEM_PROMPT');
+      if (!agentSystemPrompt) {
+        this.logger.error('No active AGENT_SYSTEM_PROMPT found in the database');
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.NEEDS_HELP,
         });
         this.isProcessing = false;
         this.currentTaskId = null;
@@ -200,7 +213,7 @@ export class AgentProcessor {
       }
 
       agentResponse = await service.generateMessage(
-        AGENT_SYSTEM_PROMPT,
+        agentSystemPrompt.content,
         messages,
         model.name,
         true,
@@ -218,7 +231,7 @@ export class AgentProcessor {
           `Task ID: ${taskId} received no content blocks from LLM, marking as failed`,
         );
         await this.tasksService.update(taskId, {
-          status: TaskStatus.FAILED,
+          status: TaskStatus.NEEDS_HELP,
         });
         this.isProcessing = false;
         this.currentTaskId = null;
@@ -396,7 +409,7 @@ export class AgentProcessor {
           error.stack,
         );
         await this.tasksService.update(taskId, {
-          status: TaskStatus.FAILED,
+          status: TaskStatus.NEEDS_HELP,
         });
         this.isProcessing = false;
         this.currentTaskId = null;

@@ -11,8 +11,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { SummariesModule } from './summaries/summaries.modue';
+import { SummariesModule } from './summaries/summaries.module';
 import { ProxyModule } from './proxy/proxy.module';
+import { PromptsModule } from './prompts/prompts.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProxyModule } from './proxy/proxy.module';
     GoogleModule,
     ProxyModule,
     PrismaModule,
+    PromptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
