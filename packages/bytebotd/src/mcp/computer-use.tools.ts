@@ -695,4 +695,33 @@ V, W, X, Y, Z
       };
     }
   }
+
+  @Tool({
+    name: 'computer_get_screen_size',
+    description: 'Gets the screen size of the remote computer.',
+  })
+  async getScreenSize() {
+    try {
+      const size = (await this.computerUse.action({
+        action: 'get_screen_size',
+      })) as { width: number; height: number };
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(size),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error getting screen size: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
 }

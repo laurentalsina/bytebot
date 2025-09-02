@@ -12,6 +12,7 @@ WORKDIR /app/bytebot-agent-cc
 
 # Install dependencies
 RUN npm install
+RUN npm install image-size
 
 
 RUN npm run build

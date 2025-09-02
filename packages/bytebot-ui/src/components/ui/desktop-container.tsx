@@ -13,6 +13,7 @@ interface DesktopContainerProps {
   viewOnly?: boolean;
   className?: string;
   status?: VirtualDesktopStatus;
+  onScreenshotDimensionsChange?: (dimensions: { width: number; height: number }) => void;
 }
 
 export const DesktopContainer: React.FC<DesktopContainerProps> = ({
@@ -21,7 +22,14 @@ export const DesktopContainer: React.FC<DesktopContainerProps> = ({
   viewOnly = false,
   className = "",
   status = "running",
+  onScreenshotDimensionsChange,
 }) => {
+  const handleDimensionsChange = (dimensions: { width: number; height: number }) => {
+    if (onScreenshotDimensionsChange) {
+      onScreenshotDimensionsChange(dimensions);
+    }
+  };
+
   return (
     <div
       className={`border-bytebot-bronze-light-7 flex w-full flex-col rounded-t-lg border-t border-r border-l ${className}`}
@@ -42,6 +50,7 @@ export const DesktopContainer: React.FC<DesktopContainerProps> = ({
           <ScreenshotViewer
             screenshot={screenshot}
             className="h-full w-full"
+            onDimensionsChange={handleDimensionsChange}
           />
         ) : (
           <VncViewer viewOnly={viewOnly} />

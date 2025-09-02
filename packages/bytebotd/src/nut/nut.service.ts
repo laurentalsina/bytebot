@@ -353,10 +353,7 @@ export class NutService {
   async mouseMoveEvent({ x, y }: { x: number; y: number }): Promise<any> {
     this.logger.log(`Moving mouse to coordinates: (${x}, ${y})`);
     try {
-      // HACK: Add a vertical offset to the y-coordinate to fix the issue of the agent clicking too high.
-      const yOffset = 30;
-      const point = new Point(x, y + yOffset);
-      this.logger.log(`Moving mouse to coordinates with offset: (${x}, ${y + yOffset})`);
+      const point = new Point(x, y);
       await mouse.setPosition(point);
       return { success: true };
     } catch (error) {
@@ -504,6 +501,18 @@ export class NutService {
       return { x: position.x, y: position.y };
     } catch (error) {
       this.logger.error(`Error getting cursor position: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async getScreenSize(): Promise<{ width: number; height: number }> {
+    this.logger.log(`Getting screen size`);
+    try {
+      const width = await screen.width();
+      const height = await screen.height();
+      return { width, height };
+    } catch (error) {
+      this.logger.error(`Error getting screen size: ${error.message}`);
       throw error;
     }
   }

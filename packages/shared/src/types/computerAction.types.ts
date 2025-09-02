@@ -105,6 +105,10 @@ export type ReadFileAction = {
   path: string;
 };
 
+export type GetScreenSizeAction = {
+  action: "get_screen_size";
+};
+
 // Define the union type using the individual action types
 export type ComputerAction =
   | MoveMouseAction
@@ -122,4 +126,5 @@ export type ComputerAction =
   | CursorPositionAction
   | ApplicationAction
   | WriteFileAction
-  | ReadFileAction;
+  | ReadFileAction
+  | GetScreenSizeAction;

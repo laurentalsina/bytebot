@@ -1,4 +1,6 @@
+import { Buffer } from 'buffer';
 import {
+  MessageContentBlock,
   Button,
   Coordinates,
   Press,
@@ -25,9 +27,31 @@ import { Logger } from '@nestjs/common';
 
 const BYTEBOT_DESKTOP_BASE_URL = process.env.BYTEBOT_DESKTOP_BASE_URL as string;
 
+async function getScreenSize(): Promise<{ width: number; height: number }> {
+  console.log('Getting screen size');
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'get_screen_size',
+      }),
+    });
+
+    const data = await response.json();
+    return { width: data.width, height: data.height };
+  } catch (error) {
+    console.error('Error in get_screen_size action:', error);
+    throw error;
+  }
+}
+
+
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,
   logger: Logger,
+  messages: MessageContentBlock[],
 ): Promise<ToolResultContentBlock> {
   logger.debug(
     `Handling computer tool use: ${block.name}, tool_use_id: ${block.id}`,
@@ -114,7 +138,7 @@ export async function handleComputerToolUse(
       await traceMouse(block.input);
     }
     if (isClickMouseToolUseBlock(block)) {
-      await clickMouse(block.input);
+      await clickMouse(block.input, messages);
     }
     if (isPressMouseToolUseBlock(block)) {
       await pressMouse(block.input);
@@ -289,7 +313,7 @@ async function clickMouse(input: {
   button?: Button;
   holdKeys?: string[];
   clickCount?: number;
-}): Promise<void> {
+}, messages: MessageContentBlock[]): Promise<void> {
   let { coordinates, button, holdKeys, clickCount } = input;
 
   if (typeof button !== 'string' || !['left', 'right', 'middle'].includes(button)) {
@@ -298,6 +322,26 @@ async function clickMouse(input: {
 
   if (typeof clickCount !== 'number' || !Number.isFinite(clickCount)) {
     clickCount = 1;
+  }
+
+  if (coordinates) {
+    const screenSize = await getScreenSize();
+    const latestScreenshot = messages
+      .slice()
+      .reverse()
+      .find((content) => content.type === 'image');
+
+    if (latestScreenshot && 'source' in latestScreenshot && 'data' in latestScreenshot.source) {
+        const imageBase64 = latestScreenshot.source.data;
+        const imageBuffer = Buffer.from(imageBase64, 'base64');
+        const imageSize = await import('image-size').then(m => m.default(imageBuffer));
+        if (imageSize.width && imageSize.height) {
+            const scaleX = screenSize.width / imageSize.width;
+            const scaleY = screenSize.height / imageSize.height;
+            coordinates.x = Math.round(coordinates.x * scaleX);
+            coordinates.y = Math.round(coordinates.y * scaleY);
+        }
+    }
   }
 
   console.log(

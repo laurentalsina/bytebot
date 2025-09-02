@@ -1,4 +1,6 @@
+import { Buffer } from 'buffer';
 import {
+  MessageContentBlock,
   Button,
   Coordinates,
   Press,
@@ -24,6 +26,27 @@ import {
 import { Logger } from '@nestjs/common';
 
 const BYTEBOT_DESKTOP_BASE_URL = process.env.BYTEBOT_DESKTOP_BASE_URL as string;
+
+async function getScreenSize(): Promise<{ width: number; height: number }> {
+  console.log('Getting screen size');
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'get_screen_size',
+      }),
+    });
+
+    const data = await response.json();
+    return { width: data.width, height: data.height };
+  } catch (error) {
+    console.error('Error in get_screen_size action:', error);
+    throw error;
+  }
+}
+
 
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,

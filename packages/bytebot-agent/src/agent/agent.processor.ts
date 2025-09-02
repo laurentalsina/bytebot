@@ -323,7 +323,7 @@ export class AgentProcessor {
 
       for (const block of messageContentBlocks) {
         if (isComputerToolUseContentBlock(block)) {
-          const result = await handleComputerToolUse(block, this.logger);
+          const result = await handleComputerToolUse(block, this.logger, messages.flatMap(m => m.content as MessageContentBlock[]));
           generatedToolResults.push(result);
         }
 

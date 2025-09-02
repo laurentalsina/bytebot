@@ -97,11 +97,20 @@ export class ComputerUseService {
         return this.readFile(params);
       }
 
+      case 'get_screen_size': {
+        return this.getScreenSize();
+      }
+
       default:
         throw new Error(
           `Unsupported computer action: ${(params as any).action}`,
         );
     }
+  }
+
+  private async getScreenSize(): Promise<{ width: number; height: number }> {
+    this.logger.log(`Getting screen size`);
+    return await this.nutService.getScreenSize();
   }
 
   private async moveMouse(action: MoveMouseAction): Promise<void> {
@@ -135,7 +144,11 @@ export class ComputerUseService {
 
     // Move to coordinates if provided
     if (coordinates) {
+      this.logger.log(`Moving mouse to coordinates: (${coordinates.x}, ${coordinates.y})`);
       await this.nutService.mouseMoveEvent(coordinates);
+      await this.delay(100);
+      const newPosition = await this.nutService.getCursorPosition();
+      this.logger.log(`New mouse position: (${newPosition.x}, ${newPosition.y})`);
     }
 
     // Hold keys if provided

@@ -16,6 +16,7 @@ import {
   PasteTextAction,
   WriteFileAction,
   ReadFileAction,
+  GetScreenSizeAction,
 } from "../types/computerAction.types";
 import {
   ComputerToolUseContentBlock,
@@ -293,6 +294,13 @@ export function convertReadFileActionToToolUseBlock(
   });
 }
 
+export function convertGetScreenSizeActionToToolUseBlock(
+  action: GetScreenSizeAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_get_screen_size", toolUseId, {});
+}
+
 /**
  * Generic converter that handles all action types
  */
@@ -333,6 +341,8 @@ export function convertComputerActionToToolUseBlock(
       return convertWriteFileActionToToolUseBlock(action, toolUseId);
     case "read_file":
       return convertReadFileActionToToolUseBlock(action, toolUseId);
+    case "get_screen_size":
+      return convertGetScreenSizeActionToToolUseBlock(action, toolUseId);
     default:
       const exhaustiveCheck: never = action;
       throw new Error(
